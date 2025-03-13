@@ -32,7 +32,8 @@ export class CustomerService {
       where: {
         restaurantId: dto.restaurantId,
         date: dto.date,
-        time: dto.time,
+        startTime: dto.startTime,
+        endTime: dto.endTime,
       },
     });
 
@@ -48,7 +49,8 @@ export class CustomerService {
       restaurantId: dto.restaurantId,
       customerId: dto.customerId,
       date: dto.date,
-      time: dto.time,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
       phone: dto.phone,
       peopleCount: dto.peopleCount,
       menus: dto.menuIds.map((id) => ({ id })),
@@ -86,7 +88,7 @@ export class CustomerService {
     return await query.getMany();
   }
 
-  async updateReservation(id: number, dto: UpdateReservationDto) {
+  async updateReservation(id: string, dto: UpdateReservationDto) {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
     });
@@ -111,7 +113,7 @@ export class CustomerService {
     return await this.reservationRepository.findOne({ where: { id } });
   }
 
-  async removeReservation(id: number) {
+  async removeReservation(id: string) {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
     });
@@ -128,7 +130,8 @@ export class CustomerService {
       );
     }
 
-    await this.reservationRepository.delete(id);
+    // 고객예약에 대해서는 softDelete로 데이터 안정성을 유지
+    await this.reservationRepository.softDelete(id);
     return { deleted: true };
   }
 }

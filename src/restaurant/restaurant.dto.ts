@@ -1,11 +1,14 @@
 import {
-  IsString,
   IsNotEmpty,
   IsInt,
   Min,
   IsOptional,
-  IsIn,
+  IsString,
+  IsEnum,
+  IsNumber,
 } from 'class-validator';
+import { MenuCategory } from './restaurant.enums';
+import { Type } from 'class-transformer';
 
 export class RestaurantLoginDto {
   @IsString()
@@ -29,8 +32,8 @@ export class CreateMenuDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['양식', '일식', '중식']) // 특정 값만 허용
-  category: string;
+  @IsEnum(MenuCategory) // MenuCategory 값만 허용
+  category: MenuCategory;
 
   @IsString()
   @IsNotEmpty()
@@ -53,10 +56,30 @@ export class UpdateMenuDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['양식', '일식', '중식']) // 선택적이지만 값이 있다면 유효성 검사
-  category?: string;
+  @IsEnum(MenuCategory)
+  category?: MenuCategory;
 
   @IsString()
   @IsOptional()
   description?: string;
+}
+
+export class MenuQueryDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @Type(() => Number) //Query 파라미터는 기본적으로 string이므로 숫자로 변환
+  @IsNumber()
+  minPrice?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  maxPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
 }
