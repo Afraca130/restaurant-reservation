@@ -8,7 +8,6 @@ import {
   IsDateString,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class LoginCustomerDto {
   @IsString()
@@ -35,7 +34,11 @@ export class CreateReservationDto {
 
   @IsString()
   @IsNotEmpty()
-  time: string;
+  startTime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
 
   @IsString()
   @IsNotEmpty()
@@ -49,14 +52,13 @@ export class CreateReservationDto {
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
-  @Type(() => Number) // 배열 요소를 숫자로 변환
-  menuIds: number[];
+  menuIds: string[];
 }
 
 export class UpdateReservationDto {
-  @IsInt()
+  @IsString()
   @IsNotEmpty()
-  id: number;
+  id: string;
 
   @IsInt()
   @Min(1)
@@ -70,6 +72,5 @@ export class UpdateReservationDto {
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => Number)
-  menuIds?: number[];
+  menuIds?: string[];
 }

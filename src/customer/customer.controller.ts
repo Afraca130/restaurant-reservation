@@ -36,8 +36,8 @@ export class CustomerController {
     this.reservationService.createReservation(dto);
   }
 
+  // restaurant, customer 모두 접근 가능
   @Get()
-  @Role('customer')
   async findAllReservations(
     @Query('phone') phone?: string,
     @Query('date') date?: string,
@@ -55,7 +55,7 @@ export class CustomerController {
   @Put(':id')
   @Role('customer')
   async updateReservation(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateReservationDto,
   ) {
     return this.reservationService.updateReservation(id, dto);
@@ -63,7 +63,7 @@ export class CustomerController {
 
   @Delete(':id')
   @Role('customer')
-  async removeReservation(@Param('id') id: number) {
+  async removeReservation(@Param('id') id: string) {
     return this.reservationService.removeReservation(id);
   }
 }
