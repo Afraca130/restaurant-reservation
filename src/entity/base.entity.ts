@@ -18,7 +18,6 @@ export class Base {
   })
   createdAt: Date;
 
-  @ApiProperty()
   @Exclude() //응답에서 `deletedAt` 자동 숨김
   @DeleteDateColumn({
     type: 'timestamp',
