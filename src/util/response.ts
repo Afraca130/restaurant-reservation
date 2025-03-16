@@ -22,7 +22,6 @@ export const errorResponse = (message: string): ApiResponse<null> => ({
   status: 'fail',
   message,
 });
-
 @Injectable()
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponse<T>>

@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
 import { Menu } from '../entity/menu.entity';
 import {
@@ -9,6 +9,7 @@ import {
   MenuQueryDto,
 } from './restaurant.dto';
 import { LoginResponseDto } from '../auth/response.dto';
+import { validateRestaurantExists } from '../util/validator';
 
 @Injectable()
 export class RestaurantService {
@@ -18,39 +19,36 @@ export class RestaurantService {
   ) {}
 
   async login(loginDto: RestaurantLoginDto): Promise<LoginResponseDto> {
-    try {
-      const { id, password } = loginDto;
-      const accessToken = await this.authService.login(
-        id,
-        password,
-        'restaurant',
-      );
+    const { id, password } = loginDto;
+    const accessToken = await this.authService.login(
+      id,
+      password,
+      'restaurant',
+    );
 
-      return { accessToken };
-    } catch (error) {
-      throw new HttpException(
-        error.message || 'Login failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    return { accessToken };
   }
 
-  async createMenu(dto: CreateMenuDto): Promise<Menu> {
+  async createMenu(restaurantId: string, dto: CreateMenuDto): Promise<Menu> {
+    // 레스토랑 존재 여부 확인
+    validateRestaurantExists(restaurantId);
     try {
-      const menu = this.menuRepository.create(dto);
+      const menu = this.menuRepository.create({ restaurantId, ...dto });
       return await this.menuRepository.save(menu);
     } catch (error) {
-      throw new HttpException(
-        'Failed to create menu',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Failed to create menu', HttpStatus.BAD_REQUEST);
     }
   }
 
-  async getMenus(queryFiters: MenuQueryDto): Promise<Menu[]> {
+  async getMenus(
+    restaurantId: string,
+    queryFiters: MenuQueryDto,
+  ): Promise<Menu[]> {
     try {
       const { name, minPrice, maxPrice, category } = queryFiters;
-      const query = this.menuRepository.createQueryBuilder('menu');
+      const query = this.menuRepository
+        .createQueryBuilder('menu')
+        .where('menu.restaurantId = :restaurantId', { restaurantId });
 
       if (name) {
         query.andWhere('menu.name LIKE :name', { name: `%${name}%` });
@@ -67,26 +65,42 @@ export class RestaurantService {
 
       return await query.getMany();
     } catch (error) {
-      throw new HttpException(
-        'Failed to fetch menus',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Failed to fetch menus', HttpStatus.BAD_REQUEST);
     }
   }
 
-  async deleteMenu(id: number) {
+  async deleteMenu(restaurantId: string, menuId: string) {
     try {
-      // menu는 데이터 안전성을 필요로 하지 않기때문에 하드 delete
-      const result = await this.menuRepository.delete(id);
-      if (result.affected === 0) {
+      // 해당 레스토랑에 메뉴가 존재하는지 여부
+      const existMenuBelongInRestaurant = await this.menuRepository.findOne({
+        where: { id: menuId, restaurantId },
+      });
+
+      if (!existMenuBelongInRestaurant) {
         throw new HttpException('Menu not found', HttpStatus.NOT_FOUND);
       }
+
+      // menu는 데이터 안전성을 필요로 하지 않기때문에 하드 delete
+      await this.menuRepository.delete(menuId);
+
       return { message: 'Menu deleted successfully' };
     } catch (error) {
-      throw new HttpException(
-        'Failed to delete menu',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      if (error instanceof HttpException) {
+        // 기존에 던진 예외는 그대로 전파
+        throw error;
+      }
+
+      throw new HttpException('Failed to delete menu', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async getMenusByIds(menuIds: string[]): Promise<Menu[]> {
+    try {
+      const menus = await this.menuRepository.findBy({ id: In(menuIds) });
+
+      return menus;
+    } catch (error) {
+      throw new HttpException('Failed to fetch menus', HttpStatus.BAD_REQUEST);
     }
   }
 }

@@ -2,12 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Delete,
   Body,
   Param,
   Query,
   UseInterceptors,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,6 +28,8 @@ import { ResponseInterceptor } from '../util/response';
 import { Role } from '../common/decorators/role.decorator';
 import { LoginResponseDto } from '../auth/response.dto';
 import { Reservation } from '../entity/reservation.entity';
+import { GetUser } from '../common/decorators/get-user.decorator';
+import { UserForm } from '../common/data/dummy-data.forms';
 
 @ApiTags('Reservation')
 @Controller('reservation')
@@ -43,7 +45,9 @@ export class CustomerController {
     description: '로그인 성공',
     type: LoginResponseDto,
   })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 400, description: '잘못된 요청 or 비밀번호 불일치' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
+  @ApiResponse({ status: 404, description: '사용자가 확인 실패' })
   @ApiBody({ type: LoginCustomerDto })
   async login(@Body() loginDto: LoginCustomerDto): Promise<LoginResponseDto> {
     return this.reservationService.login(loginDto);
@@ -60,9 +64,10 @@ export class CustomerController {
   @ApiResponse({ status: 400, description: '잘못된 요청' })
   @ApiBody({ type: CreateReservationDto })
   async createReservation(
+    @GetUser() user: UserForm,
     @Body() dto: CreateReservationDto,
   ): Promise<Reservation> {
-    return this.reservationService.createReservation(dto);
+    return this.reservationService.createReservation(user.id, dto);
   }
 
   @Get()
@@ -73,12 +78,13 @@ export class CustomerController {
   @ApiQuery({ name: 'minPeople', required: false, type: Number })
   @ApiQuery({ name: 'menu', required: false, type: Number })
   async findAllReservations(
+    @GetUser() user: UserForm,
     @Query('phone') phone?: string,
     @Query('date') date?: string,
     @Query('minPeople') minPeople?: number,
     @Query('menu') menuId?: number,
   ): Promise<Reservation[]> {
-    return this.reservationService.findAllReservations({
+    return this.reservationService.findAllReservations(user, {
       phone,
       date,
       minPeople,
@@ -86,18 +92,25 @@ export class CustomerController {
     });
   }
 
-  @Put(':id')
+  @Patch(':id')
   @Role('customer')
   @ApiOperation({ summary: '예약 수정' })
   @ApiResponse({ status: 200, description: '수정 성공', type: Reservation })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 403, description: '본인만 수정 가능' })
   @ApiResponse({ status: 404, description: '예약을 찾을 수 없음' })
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: UpdateReservationDto })
   async updateReservation(
-    @Param('id') id: string,
+    @Param('id') reservationId: string,
+    @GetUser() user: UserForm,
     @Body() dto: UpdateReservationDto,
   ): Promise<Reservation> {
-    return this.reservationService.updateReservation(id, dto);
+    return this.reservationService.updateReservation(
+      reservationId,
+      user.id,
+      dto,
+    );
   }
 
   @Delete(':id')

@@ -8,18 +8,21 @@ import { HttpExceptionFilter } from './common/exception-filter/http-exception.fi
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const document = SwaggerModule.createDocument(app, swaggerConfig);
+
   app.enableCors();
   app.useGlobalFilters(new HttpExceptionFilter());
-  // @Exclude적용을 위한 Interceptor
+  // @Exclude 적용을 위한 Interceptor
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true, // Query값 변환
+      transform: true,
     }),
   );
+
   SwaggerModule.setup('api', app, document);
   await app.listen(3000);
 }
+
 bootstrap();
