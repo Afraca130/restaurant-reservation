@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, MoreThan, Repository } from 'typeorm';
 import { Reservation } from '../entity/reservation.entity';
 import {
   CreateReservationDto,
@@ -8,6 +8,7 @@ import {
   UpdateReservationDto,
 } from './customer.dto';
 import { AuthService } from '../auth/auth.service';
+import { LoginResponseDto } from '../auth/response.dto';
 
 @Injectable()
 export class CustomerService {
@@ -17,29 +18,28 @@ export class CustomerService {
     private readonly authService: AuthService,
   ) {}
 
-  async login(loginDto: LoginCustomerDto) {
+  async login(loginDto: LoginCustomerDto): Promise<LoginResponseDto> {
     const { id, password } = loginDto;
-    console.log(loginDto);
 
     const accessToken = await this.authService.login(id, password, 'customer');
 
     return { accessToken };
   }
 
-  async createReservation(dto: CreateReservationDto) {
-    // 예약 중복 검증 (같은 식당, 같은 시간대 예약 방지)
-    const existingCustomer = await this.reservationRepository.findOne({
+  async createReservation(dto: CreateReservationDto): Promise<Reservation> {
+    // 같은 식당 내 예약 시간이 겹치는지 확인
+    const overlappingReservations = await this.reservationRepository.findOne({
       where: {
         restaurantId: dto.restaurantId,
         date: dto.date,
-        startTime: dto.startTime,
-        endTime: dto.endTime,
+        startTime: LessThan(dto.endTime),
+        endTime: MoreThan(dto.startTime),
       },
     });
 
-    if (existingCustomer) {
+    if (overlappingReservations) {
       throw new HttpException(
-        '이미 해당 시간에 예약이 존재합니다.',
+        '해당 시간대에 이미 예약이 존재합니다.',
         HttpStatus.CONFLICT,
       );
     }
@@ -64,7 +64,7 @@ export class CustomerService {
     date?: string;
     minPeople?: number;
     menuId?: number;
-  }) {
+  }): Promise<Reservation[]> {
     const { phone, date, minPeople, menuId } = filters;
     const query = this.reservationRepository
       .createQueryBuilder('reservation')
@@ -88,7 +88,10 @@ export class CustomerService {
     return await query.getMany();
   }
 
-  async updateReservation(id: string, dto: UpdateReservationDto) {
+  async updateReservation(
+    id: string,
+    dto: UpdateReservationDto,
+  ): Promise<Reservation> {
     const reservation = await this.reservationRepository.findOne({
       where: { id },
     });

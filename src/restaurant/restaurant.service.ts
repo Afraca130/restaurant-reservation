@@ -8,6 +8,7 @@ import {
   CreateMenuDto,
   MenuQueryDto,
 } from './restaurant.dto';
+import { LoginResponseDto } from '../auth/response.dto';
 
 @Injectable()
 export class RestaurantService {
@@ -16,7 +17,7 @@ export class RestaurantService {
     private readonly authService: AuthService,
   ) {}
 
-  async login(loginDto: RestaurantLoginDto) {
+  async login(loginDto: RestaurantLoginDto): Promise<LoginResponseDto> {
     try {
       const { id, password } = loginDto;
       const accessToken = await this.authService.login(
@@ -34,7 +35,7 @@ export class RestaurantService {
     }
   }
 
-  async createMenu(dto: CreateMenuDto) {
+  async createMenu(dto: CreateMenuDto): Promise<Menu> {
     try {
       const menu = this.menuRepository.create(dto);
       return await this.menuRepository.save(menu);
@@ -46,7 +47,7 @@ export class RestaurantService {
     }
   }
 
-  async getMenus(queryFiters: MenuQueryDto) {
+  async getMenus(queryFiters: MenuQueryDto): Promise<Menu[]> {
     try {
       const { name, minPrice, maxPrice, category } = queryFiters;
       const query = this.menuRepository.createQueryBuilder('menu');
