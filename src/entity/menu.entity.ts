@@ -5,6 +5,7 @@ import { MenuCategory } from '../restaurant/restaurant.enums';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
+@Index('idx_menu_restaurant', ['restaurantId']) // 레스토랑 검색 최적화
 @Index('idx_menu_name', ['name']) // 메뉴 이름 검색 최적화
 @Index('idx_menu_price', ['price']) // 가격 범위 검색 최적화
 @Index('idx_menu_category', ['category']) // 카테고리 검색 최적화
@@ -24,6 +25,10 @@ export class Menu extends Base {
   @ApiProperty({ description: '메뉴 설명' })
   @Column()
   description: string;
+
+  @ApiProperty({ description: '레스토랑 ID' })
+  @Column()
+  restaurantId: string;
 
   @ManyToMany(() => Reservation)
   reservation: Reservation[];

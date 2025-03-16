@@ -6,7 +6,7 @@ import {
   IsArray,
   Min,
   IsDateString,
-  ValidateNested,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -23,11 +23,6 @@ export class LoginCustomerDto {
 }
 
 export class CreateReservationDto {
-  @ApiProperty({ description: '고객 ID' })
-  @IsString()
-  @IsNotEmpty()
-  customerId: string;
-
   @ApiProperty({ description: '레스토랑 ID' })
   @IsString()
   @IsNotEmpty()
@@ -55,37 +50,26 @@ export class CreateReservationDto {
 
   @ApiProperty({ description: '예약 인원 수', minimum: 1 })
   @IsInt()
-  @Min(1)
   @IsNotEmpty()
   peopleCount: number;
 
   @ApiProperty({ description: '메뉴 ID 목록', type: [String] })
   @IsArray()
-  @IsNotEmpty()
-  @ValidateNested({ each: true })
+  @ArrayNotEmpty() // 배열이 비어있으면 검증 실패
+  @IsString({ each: true }) // 배열 내부 요소가 문자열인지 검증
   menuIds: string[];
 }
 
 export class UpdateReservationDto {
-  @ApiProperty({ description: '예약 ID' })
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
   @ApiProperty({ description: '예약 인원 수', required: false, minimum: 1 })
   @IsInt()
   @Min(1)
   @IsOptional()
   peopleCount?: number;
 
-  @ApiProperty({ description: '고객 ID' })
-  @IsString()
-  @IsNotEmpty()
-  customerId: string;
-
   @ApiProperty({ description: '메뉴 ID 목록', type: [String], required: false })
   @IsArray()
   @IsOptional()
-  @ValidateNested({ each: true })
+  @IsString({ each: true })
   menuIds?: string[];
 }

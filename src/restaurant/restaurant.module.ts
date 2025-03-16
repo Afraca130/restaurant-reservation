@@ -10,5 +10,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [TypeOrmModule.forFeature([Menu]), AuthModule],
   controllers: [RestaurantController],
   providers: [RestaurantService, AuthService],
+  exports: [RestaurantService],
 })
 export class RestaurantModule {}

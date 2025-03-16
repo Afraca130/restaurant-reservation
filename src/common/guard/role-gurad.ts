@@ -33,15 +33,12 @@ export class RolesGuard implements CanActivate {
     let decodedToken;
     try {
       decodedToken = this.jwtService.verify(token); // JWT 해석
-      console.log(decodedToken);
     } catch (error) {
       throw new ForbiddenException('Invalid or expired token.');
     }
 
     const userRole = decodedToken.role; // 사용자 역할 추출
     request.user = decodedToken; // `request.user`에 유저 정보 저장
-
-    console.log(`User Role: ${userRole}, Required Role: ${requiredRoles}`);
 
     if (!userRole || !requiredRoles.includes(userRole)) {
       throw new ForbiddenException(
